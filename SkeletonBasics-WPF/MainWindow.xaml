@@ -59,12 +59,12 @@
             <Image Grid.Column="1" Source="Images\Status.png" Stretch="None" HorizontalAlignment="Center" Margin="0 0 0 5"/>
         </DockPanel>
 
-        <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Center">
-            <Image Name="Image" Width="640" Height="480"/>
-            
+        <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Stretch">
+            <Image Name="Image" Width="1024" Height="720"/>
         </Viewbox>
-        <Viewbox Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="60" Height="80">
-            <Image x:Name="Indicacion" Width="60" Height="80"/>
+
+        <Viewbox Grid.Row="1" Grid.Column="0" Stretch="None"  HorizontalAlignment="Right"  VerticalAlignment="Top">
+            <Image x:Name="Indicacion" Stretch="None" />
 
         </Viewbox>
 

@@ -29,7 +29,8 @@ using System.IO.Packaging;
         Agachandose,
         Agachado,
         Saltando,
-        Salto
+        Salto,
+        Fin
     }
 
     /// <summary>
@@ -413,7 +414,16 @@ using System.IO.Packaging;
                     else if (actual == Estado.Agachado)
                         estado_agachado(bones);
                     else if (actual == Estado.Saltando)
+                    {
                         estado_saltando(bones);
+
+                    }
+                    else if (actual == Estado.Fin)
+                    {
+                        Thread.Sleep(1000);
+                        actual = Estado.Inicial;
+                    }
+
                 }
             }
         }
@@ -493,11 +503,7 @@ using System.IO.Packaging;
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Bien hecho";
                 
-                actual = Estado.Inicial;
-                /*cabeza_agachado.x = bones.Joints[JointType.Head].Position.X;
-                cabeza_agachado.y = bones.Joints[JointType.Head].Position.Y;
-                cabeza_agachado.z = bones.Joints[JointType.Head].Position.Z;
-                */
+                actual = Estado.Fin;
             }
         }
     }
