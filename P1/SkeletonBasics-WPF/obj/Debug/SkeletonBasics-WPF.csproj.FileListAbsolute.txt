@@ -10,3 +10,5 @@ C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\obj\Debug\Microsoft.Sampl
 C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.csproj.GenerateResource.Cache
 C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.exe
 C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.pdb
+C:\Users\PEDRO\Documents\GitHub\NPI\P1\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.exe
+C:\Users\PEDRO\Documents\GitHub\NPI\P1\SkeletonBasics-WPF\obj\Debug\SkeletonBasics-WPF.pdb
