@@ -39,8 +39,10 @@ using System.IO.Packaging;
     public partial class MainWindow : Window
     {
 
+        //Puntos que vamos a guardar para después compararlos y saber si se está agachado o si se ha saltado suficiente
         Coordenadas cabeza_inicial, cadera_inicial, cabeza_agachado;
 
+        //Variable para guardar en que estado se está
         Estado actual = Estado.Inicial;        
 
         /// <summary>
@@ -272,6 +274,7 @@ using System.IO.Packaging;
                 this.drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, RenderWidth, RenderHeight));
             }
 
+            //Llamamos a la función que controla los estados por los que hay que pasar
             detectar_estado(skeletons);
         }
 
@@ -401,6 +404,7 @@ using System.IO.Packaging;
             }
         }
 
+        //Función para controlar las acciones a realizar según el estado en que nos encontramos.
         public void detectar_estado(Skeleton [] skeletons)
         {
             foreach (Skeleton bones in skeletons)
@@ -418,7 +422,7 @@ using System.IO.Packaging;
                         estado_saltando(bones);
 
                     }
-                    else if (actual == Estado.Fin)
+                    else if (actual == Estado.Fin) // Cuando acabamos, volvemos al empezar
                     {
                         Thread.Sleep(1000);
                         actual = Estado.Inicial;
@@ -428,6 +432,7 @@ using System.IO.Packaging;
             }
         }
 
+        //Acciones que se realizan en el estado inicial (Nos centra para empezar a detectar el movimiento de agacharse)
         public void estado_inicial(Skeleton bones)
         {
             bool z = true;
@@ -435,12 +440,12 @@ using System.IO.Packaging;
             if (bones.Joints[JointType.HipCenter].Position.Z < 3)
             {
                 solucionP.Content = "Alejate";
-                System.String imgPath = @"C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\bin\Debug\atras.bmp";
+                System.String imgPath = Path.GetFullPath(@"atras.bmp");
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 z = false;
             }else if (bones.Joints[JointType.HipCenter].Position.Z > 3.5)
             {
-                System.String imgPath = @"C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\bin\Debug\avanzar.bmp";
+                System.String imgPath = Path.GetFullPath(@"avanzar.bmp");
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Acercate";
                 z = false;
@@ -448,13 +453,13 @@ using System.IO.Packaging;
 
             if(bones.Joints[JointType.HipCenter].Position.X < -0.1)
             {
-                System.String imgPath = @"C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\bin\Debug\derecha.bmp";
+                System.String imgPath = Path.GetFullPath(@"derecha.bmp");
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Muevete a la derecha";
                 x = false;
             }else if (bones.Joints[JointType.HipCenter].Position.X > 0.1)
             {
-                System.String imgPath = @"C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\bin\Debug\izquierda.bmp";
+                System.String imgPath = Path.GetFullPath(@"izquierda.bmp");
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Muevete a la izquierda";
                 x = false;
@@ -462,7 +467,7 @@ using System.IO.Packaging;
 
             if(x && z){
                 actual = Estado.Agachandose;
-                System.String imgPath = @"C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\bin\Debug\abajo.bmp";
+                System.String imgPath = Path.GetFullPath(@"abajo.bmp");
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Posición correcta. Ahora agachate";
 
@@ -477,16 +482,18 @@ using System.IO.Packaging;
             }
         }
 
+        //Controla cuando estamos agachados
         public void estado_agachandose(Skeleton bones)
         {
             if(bones.Joints[JointType.HipCenter].Position.Y < cadera_inicial.y - 0.3){
-                System.String imgPath = @"C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\bin\Debug\saltar.bmp";
+                System.String imgPath = Path.GetFullPath(@"saltar.bmp");
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Estas agachado. Ahora salta";
                 actual = Estado.Agachado;
             }
         }
 
+        //Controla cuando empezamos a saltar
         public void estado_agachado(Skeleton bones){
 
             if (bones.Joints[JointType.Head].Position.Y > cabeza_agachado.y + 0.05)
@@ -495,11 +502,12 @@ using System.IO.Packaging;
             }
         }
 
+        //Controla si hemoms saltado suficiente
         public void estado_saltando(Skeleton bones)
         {
             
             if(bones.Joints[JointType.HipCenter].Position.Y > cadera_inicial.y + 0.1){
-                System.String imgPath = @"C:\Users\PEDRO\Documents\GitHub\NPI\SkeletonBasics-WPF\bin\Debug\tick.bmp";
+                System.String imgPath = Path.GetFullPath(@"tick.bmp");
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Bien hecho";
                 
