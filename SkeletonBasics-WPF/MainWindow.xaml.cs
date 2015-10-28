@@ -181,9 +181,6 @@ using System.IO.Packaging;
             // Create an image source that we can use in our image control
             this.imageSource = new DrawingImage(this.drawingGroup);
 
-            // Display the drawing using our image control
-            Image.Source = this.imageSource;
-
             // Look through all sensors and start the first connected one.
             // This requires that a Kinect is connected at the time of app startup.
             // To make your app robust against plug/unplug, 
@@ -220,15 +217,7 @@ using System.IO.Packaging;
                 // Add an event handler to be called whenever there is new color frame data
                 this.sensor.SkeletonFrameReady += this.SensorSkeletonFrameReady;
 
-                // Start the sensor!
-                try
-                {
-                    this.sensor.Start();
-                }
-                catch (IOException)
-                {
-                    this.sensor = null;
-                }
+                this.Skeleto.Source = this.imageSource;
 
                 // Start the sensor!
                 try
@@ -281,8 +270,8 @@ using System.IO.Packaging;
             using (DrawingContext dc = this.drawingGroup.Open())
             {
                 // Draw a transparent background to set the render size
-                dc.DrawRectangle(Brushes.Black, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
-
+                dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
+                //dc.DrawRectangle(Brushes.Red, null, new Rect(RenderWidth, RenderHeight, 1, 1));
                 if (skeletons.Length != 0)
                 {
                     foreach (Skeleton skel in skeletons)
@@ -366,6 +355,7 @@ using System.IO.Packaging;
                 if (drawBrush != null)
                 {
                     drawingContext.DrawEllipse(drawBrush, null, this.SkeletonPointToScreen(joint.Position), JointThickness, JointThickness);
+                    drawingContext.DrawEllipse(Brushes.Red, null, this.SkeletonPointToScreen(skeleton.Joints[JointType.HipCenter].Position), 9, 9);
                 }
             }
         }
@@ -417,6 +407,32 @@ using System.IO.Packaging;
             }
 
             drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
+            if (actual == Estado.Inicial)
+            {
+                Point centro = new Point(326, 157);
+                //326,187
+                Pen pen = new Pen(Brushes.Red, 0.1);
+                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 7, 7);
+            }else if(actual == Estado.Agachandose){
+                Point centro = new Point(326, 247);
+                //326,187
+                Pen pen = new Pen(Brushes.Red, 0.5);
+                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 7, 7);
+            }
+            else if (actual == Estado.Saltando)
+            {
+                Point centro = new Point(326, 112);
+                //326,187
+                Pen pen = new Pen(Brushes.Red, 0.5);
+                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 7, 7);
+            }
+            else if (actual == Estado.Salto)
+            {
+                Point centro = new Point(326, 112);
+                //326,187
+                Pen pen = new Pen(Brushes.Green, 0.1);
+                drawingContext.DrawEllipse(Brushes.MediumBlue, pen, centro, 7, 7);
+            }
         }
 
         /// <summary>
@@ -512,22 +528,22 @@ using System.IO.Packaging;
 
             if(bones.Joints[JointType.HipCenter].Position.X < -0.1)
             {
-                System.String imgPath = Path.GetFullPath(@"derecha.bmp");
-                Indicacion.Source = new BitmapImage(new Uri(imgPath));
+               // System.String imgPath = Path.GetFullPath(@"derecha.bmp");
+               // Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Muevete a la derecha";
                 x = false;
             }else if (bones.Joints[JointType.HipCenter].Position.X > 0.1)
             {
-                System.String imgPath = Path.GetFullPath(@"izquierda.bmp");
-                Indicacion.Source = new BitmapImage(new Uri(imgPath));
+               // System.String imgPath = Path.GetFullPath(@"izquierda.bmp");
+              //  Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Muevete a la izquierda";
                 x = false;
             }
 
             if(x && z){
                 actual = Estado.Agachandose;
-                System.String imgPath = Path.GetFullPath(@"abajo.bmp");
-                Indicacion.Source = new BitmapImage(new Uri(imgPath));
+                //System.String imgPath = Path.GetFullPath(@"abajo.bmp");
+                //Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Posición correcta. Ahora agachate";
 
                 //Guardo la altura de la cabeza y de la cadera
@@ -545,8 +561,8 @@ using System.IO.Packaging;
         public void estado_agachandose(Skeleton bones)
         {
             if(bones.Joints[JointType.HipCenter].Position.Y < cadera_inicial.y - 0.3){
-                System.String imgPath = Path.GetFullPath(@"saltar.bmp");
-                Indicacion.Source = new BitmapImage(new Uri(imgPath));
+                //System.String imgPath = Path.GetFullPath(@"saltar.bmp");
+               // Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Estas agachado. Ahora salta";
                 actual = Estado.Agachado;
             }
@@ -566,8 +582,8 @@ using System.IO.Packaging;
         {
             
             if(bones.Joints[JointType.HipCenter].Position.Y > cadera_inicial.y + 0.2){
-                System.String imgPath = Path.GetFullPath(@"tick.bmp");
-                Indicacion.Source = new BitmapImage(new Uri(imgPath));
+               // System.String imgPath = Path.GetFullPath(@"tick.bmp");
+               // Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Bien hecho";
                 
                 actual = Estado.Fin;

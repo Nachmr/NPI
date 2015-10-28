@@ -62,7 +62,9 @@
         <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Stretch">
             <Image Name="Image" Width="1024" Height="720"/>
         </Viewbox>
-
+        <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Stretch">
+            <Image Name="Skeleto" Width="1024" Height="720"/>
+        </Viewbox>
         <Viewbox Grid.Row="1" Grid.Column="0" Stretch="None"  HorizontalAlignment="Right"  VerticalAlignment="Top">
             <Image x:Name="Indicacion" Stretch="None" />
 
