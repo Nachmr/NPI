@@ -15,6 +15,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
 using System.IO.Packaging;
     using System.Windows.Media.Imaging;
     using System;
+    using System.Timers;
 
     public struct Coordenadas
     {
@@ -43,7 +44,11 @@ using System.IO.Packaging;
         Coordenadas cabeza_inicial, cadera_inicial, cabeza_agachado;
 
         //Variable para guardar en que estado se está
-        Estado actual = Estado.Inicial;        
+        Estado actual = Estado.Inicial;
+
+        bool seguir;
+
+        
 
         /// <summary>
         /// Width of output drawing
@@ -175,6 +180,8 @@ using System.IO.Packaging;
         /// <param name="e">event arguments</param>
         private void WindowLoaded(object sender, RoutedEventArgs e)
         {
+            
+
             // Create the drawing group we'll use for drawing
             this.drawingGroup = new DrawingGroup();
 
@@ -354,7 +361,7 @@ using System.IO.Packaging;
 
                 if (drawBrush != null)
                 {
-                    drawingContext.DrawEllipse(drawBrush, null, this.SkeletonPointToScreen(joint.Position), JointThickness, JointThickness);
+                    //drawingContext.DrawEllipse(drawBrush, null, this.SkeletonPointToScreen(joint.Position), JointThickness, JointThickness);
                     drawingContext.DrawEllipse(Brushes.Red, null, this.SkeletonPointToScreen(skeleton.Joints[JointType.HipCenter].Position), 9, 9);
                 }
             }
@@ -406,32 +413,68 @@ using System.IO.Packaging;
                 drawPen = this.trackedBonePen;
             }
 
-            drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
+            //drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
             if (actual == Estado.Inicial)
             {
-                Point centro = new Point(326, 157);
-                //326,187
-                Pen pen = new Pen(Brushes.Red, 0.1);
-                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 7, 7);
-            }else if(actual == Estado.Agachandose){
-                Point centro = new Point(326, 247);
-                //326,187
-                Pen pen = new Pen(Brushes.Red, 0.5);
-                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 7, 7);
+                if (!seguir)
+                {
+                    Point centro = new Point(326, 157);
+                    Pen pen = new Pen(Brushes.Red, 0.1);
+                    drawingContext.DrawEllipse(Brushes.Red, pen, centro, 17, 17);
+                }
+                else
+                {
+                    Point centro = new Point(326, 157);
+                    Pen pen = new Pen(Brushes.Green, 0.1);
+                    drawingContext.DrawEllipse(Brushes.Green, pen, centro, 17, 17);
+                }
+            }
+            else if (actual == Estado.Agachandose)
+            {
+                if (!seguir)
+                {
+                    Point centro = new Point(326, 247);
+                    Pen pen = new Pen(Brushes.Red, 0.5);
+                    drawingContext.DrawEllipse(Brushes.Red, pen, centro, 17, 17);
+                }
+                else
+                {
+                    Point centro = new Point(326, 247);
+                    Pen pen = new Pen(Brushes.Green, 0.5);
+                    drawingContext.DrawEllipse(Brushes.Green, pen, centro, 17, 17);
+                }
+            }
+            else if(actual == Estado.Agachado){
+                if (!seguir)
+                {
+                    Point centro = new Point(326, 247);
+                    Pen pen = new Pen(Brushes.Red, 0.5);
+                    drawingContext.DrawEllipse(Brushes.Red, pen, centro, 17, 17);
+                }
+                else
+                {
+                    Point centro = new Point(326, 247);
+                    Pen pen = new Pen(Brushes.Green, 0.5);
+                    drawingContext.DrawEllipse(Brushes.Green, pen, centro, 17, 17);
+                }
             }
             else if (actual == Estado.Saltando)
             {
                 Point centro = new Point(326, 112);
-                //326,187
                 Pen pen = new Pen(Brushes.Red, 0.5);
                 drawingContext.DrawEllipse(Brushes.Red, pen, centro, 7, 7);
             }
             else if (actual == Estado.Salto)
             {
                 Point centro = new Point(326, 112);
-                //326,187
                 Pen pen = new Pen(Brushes.Green, 0.1);
-                drawingContext.DrawEllipse(Brushes.MediumBlue, pen, centro, 7, 7);
+                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 7, 7);
+            }
+            else if (actual == Estado.Fin)
+            {
+                Point centro = new Point(326, 112);
+                Pen pen = new Pen(Brushes.Green, 0.1);
+                drawingContext.DrawEllipse(Brushes.Green, pen, centro, 7, 7);
             }
         }
 
@@ -475,7 +518,7 @@ using System.IO.Packaging;
                     }
                     else if (actual == Estado.Fin) // Cuando acabamos, volvemos al empezar
                     {
-                        Thread.Sleep(1000);
+                        //Thread.Sleep(1000);
                         actual = Estado.Inicial;
                     }
 
@@ -510,61 +553,91 @@ using System.IO.Packaging;
         //Acciones que se realizan en el estado inicial (Nos centra para empezar a detectar el movimiento de agacharse)
         public void estado_inicial(Skeleton bones)
         {
+            Indicacion.Visibility = Visibility.Visible;
             bool z = true;
             bool x = true;
-            if (bones.Joints[JointType.HipCenter].Position.Z < 3)
+            if (bones.Joints[JointType.HipCenter].Position.Z < 2.5)
             {
                 solucionP.Content = "Alejate";
                 System.String imgPath = Path.GetFullPath(@"atras.bmp");
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 z = false;
-            }else if (bones.Joints[JointType.HipCenter].Position.Z > 3.5)
+            }else if (bones.Joints[JointType.HipCenter].Position.Z > 4.5)
             {
                 System.String imgPath = Path.GetFullPath(@"avanzar.bmp");
                 Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Acercate";
                 z = false;
+                seguir = false;
             }
 
-            if(bones.Joints[JointType.HipCenter].Position.X < -0.1)
+            if(bones.Joints[JointType.HipCenter].Position.X < -1)
             {
                // System.String imgPath = Path.GetFullPath(@"derecha.bmp");
                // Indicacion.Source = new BitmapImage(new Uri(imgPath));
+                
                 solucionP.Content = "Muevete a la derecha";
                 x = false;
-            }else if (bones.Joints[JointType.HipCenter].Position.X > 0.1)
+                seguir = false;
+            }else if (bones.Joints[JointType.HipCenter].Position.X > 1)
             {
                // System.String imgPath = Path.GetFullPath(@"izquierda.bmp");
               //  Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Muevete a la izquierda";
+                seguir = false;
                 x = false;
             }
 
             if(x && z){
-                actual = Estado.Agachandose;
-                //System.String imgPath = Path.GetFullPath(@"abajo.bmp");
-                //Indicacion.Source = new BitmapImage(new Uri(imgPath));
-                solucionP.Content = "Posición correcta. Ahora agachate";
+                seguir = false;
+                Indicacion.Visibility = Visibility.Hidden;
+                System.Timers.Timer aTimer = new System.Timers.Timer(1000);
+                aTimer.Start();
+                aTimer.Elapsed += HandleTimerElapsed;
 
-                //Guardo la altura de la cabeza y de la cadera
-                cadera_inicial.x = bones.Joints[JointType.HipCenter].Position.X;
-                cadera_inicial.y = bones.Joints[JointType.HipCenter].Position.Y;
-                cadera_inicial.z = bones.Joints[JointType.HipCenter].Position.Z;
+                if (seguir)
+                {
+                    actual = Estado.Agachandose;
 
-                cabeza_inicial.x = bones.Joints[JointType.Head].Position.X;
-                cabeza_inicial.y = bones.Joints[JointType.Head].Position.Y;
-                cabeza_inicial.z = bones.Joints[JointType.Head].Position.Z;
+                    //System.String imgPath = Path.GetFullPath(@"abajo.bmp");
+                    //Indicacion.Source = new BitmapImage(new Uri(imgPath));
+                    solucionP.Content = "Posición correcta. Ahora agachate";
+
+                    //Guardo la altura de la cabeza y de la cadera
+                    cadera_inicial.x = bones.Joints[JointType.HipCenter].Position.X;
+                    cadera_inicial.y = bones.Joints[JointType.HipCenter].Position.Y;
+                    cadera_inicial.z = bones.Joints[JointType.HipCenter].Position.Z;
+
+                    cabeza_inicial.x = bones.Joints[JointType.Head].Position.X;
+                    cabeza_inicial.y = bones.Joints[JointType.Head].Position.Y;
+                    cabeza_inicial.z = bones.Joints[JointType.Head].Position.Z;
+                    aTimer.Stop();
+                }
             }
+        }
+
+        public void HandleTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            seguir = true;
         }
 
         //Controla cuando estamos agachados
         public void estado_agachandose(Skeleton bones)
         {
             if(bones.Joints[JointType.HipCenter].Position.Y < cadera_inicial.y - 0.3){
+                
                 //System.String imgPath = Path.GetFullPath(@"saltar.bmp");
                // Indicacion.Source = new BitmapImage(new Uri(imgPath));
-                solucionP.Content = "Estas agachado. Ahora salta";
-                actual = Estado.Agachado;
+                seguir = false;
+                System.Timers.Timer aTimer = new System.Timers.Timer(1000);
+                aTimer.Start();
+                aTimer.Elapsed += HandleTimerElapsed;
+                if (seguir)
+                {
+                    solucionP.Content = "Estas agachado. Ahora salta";
+                    actual = Estado.Agachado;
+                    aTimer.Stop();
+                }
             }
         }
 
@@ -573,6 +646,7 @@ using System.IO.Packaging;
 
             if (bones.Joints[JointType.Head].Position.Y > cabeza_agachado.y + 0.05)
             {
+
                 actual = Estado.Saltando;
             }
         }
