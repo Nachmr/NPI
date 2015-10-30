@@ -65,6 +65,12 @@
         <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Stretch">
             <Image Name="Skeleto" Width="1024" Height="720"/>
         </Viewbox>
+        <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Image Name="Avanzar" Width="40" Height="40" Source="Images\arriba.png"/>
+        </Viewbox>
+        <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+            <Image Name="Retroceder" Width="100" Height="100" Source="Images\abajo.bmp"/>
+        </Viewbox>
         <Viewbox Grid.Row="1" Grid.Column="0" Stretch="None"  HorizontalAlignment="Right"  VerticalAlignment="Top">
             <Image x:Name="Indicacion" Stretch="None" />
 

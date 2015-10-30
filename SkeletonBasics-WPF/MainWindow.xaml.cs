@@ -47,6 +47,7 @@ using System.IO.Packaging;
         Estado actual = Estado.Inicial;
 
         bool seguir;
+        bool rojo = true;
 
         
 
@@ -416,7 +417,7 @@ using System.IO.Packaging;
             //drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
             if (actual == Estado.Inicial)
             {
-                if (!seguir)
+                if (rojo)
                 {
                     Point centro = new Point(326, 157);
                     Pen pen = new Pen(Brushes.Red, 0.1);
@@ -431,7 +432,7 @@ using System.IO.Packaging;
             }
             else if (actual == Estado.Agachandose)
             {
-                if (!seguir)
+                if (rojo)
                 {
                     Point centro = new Point(326, 247);
                     Pen pen = new Pen(Brushes.Red, 0.5);
@@ -445,7 +446,7 @@ using System.IO.Packaging;
                 }
             }
             else if(actual == Estado.Agachado){
-                if (!seguir)
+                if (rojo)
                 {
                     Point centro = new Point(326, 247);
                     Pen pen = new Pen(Brushes.Red, 0.5);
@@ -462,19 +463,19 @@ using System.IO.Packaging;
             {
                 Point centro = new Point(326, 112);
                 Pen pen = new Pen(Brushes.Red, 0.5);
-                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 7, 7);
+                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 17, 17);
             }
             else if (actual == Estado.Salto)
             {
                 Point centro = new Point(326, 112);
                 Pen pen = new Pen(Brushes.Green, 0.1);
-                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 7, 7);
+                drawingContext.DrawEllipse(Brushes.Red, pen, centro, 17, 17);
             }
             else if (actual == Estado.Fin)
             {
                 Point centro = new Point(326, 112);
                 Pen pen = new Pen(Brushes.Green, 0.1);
-                drawingContext.DrawEllipse(Brushes.Green, pen, centro, 7, 7);
+                drawingContext.DrawEllipse(Brushes.Green, pen, centro, 17, 17);
             }
         }
 
@@ -518,7 +519,6 @@ using System.IO.Packaging;
                     }
                     else if (actual == Estado.Fin) // Cuando acabamos, volvemos al empezar
                     {
-                        //Thread.Sleep(1000);
                         actual = Estado.Inicial;
                     }
 
@@ -559,39 +559,42 @@ using System.IO.Packaging;
             if (bones.Joints[JointType.HipCenter].Position.Z < 2.5)
             {
                 solucionP.Content = "Alejate";
-                System.String imgPath = Path.GetFullPath(@"atras.bmp");
-                Indicacion.Source = new BitmapImage(new Uri(imgPath));
+                Retroceder.Visibility = Visibility.Visible;
                 z = false;
-            }else if (bones.Joints[JointType.HipCenter].Position.Z > 4.5)
+                rojo = true;
+            }
+            else {
+                Retroceder.Visibility = Visibility.Hidden;
+            } 
+            
+            if (bones.Joints[JointType.HipCenter].Position.Z > 4.5)
             {
-                System.String imgPath = Path.GetFullPath(@"avanzar.bmp");
-                Indicacion.Source = new BitmapImage(new Uri(imgPath));
+                Avanzar.Visibility = Visibility.Visible;
                 solucionP.Content = "Acercate";
                 z = false;
-                seguir = false;
+                rojo = true;
             }
+            else
+            {
+                Avanzar.Visibility = Visibility.Hidden;
+            } 
 
             if(bones.Joints[JointType.HipCenter].Position.X < -1)
-            {
-               // System.String imgPath = Path.GetFullPath(@"derecha.bmp");
-               // Indicacion.Source = new BitmapImage(new Uri(imgPath));
-                
+            {                
                 solucionP.Content = "Muevete a la derecha";
                 x = false;
-                seguir = false;
             }else if (bones.Joints[JointType.HipCenter].Position.X > 1)
             {
-               // System.String imgPath = Path.GetFullPath(@"izquierda.bmp");
-              //  Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Muevete a la izquierda";
                 seguir = false;
                 x = false;
+                rojo = true;
             }
 
             if(x && z){
-                seguir = false;
+                rojo = false;
                 Indicacion.Visibility = Visibility.Hidden;
-                System.Timers.Timer aTimer = new System.Timers.Timer(1000);
+                System.Timers.Timer aTimer = new System.Timers.Timer(2000);
                 aTimer.Start();
                 aTimer.Elapsed += HandleTimerElapsed;
 
@@ -599,8 +602,6 @@ using System.IO.Packaging;
                 {
                     actual = Estado.Agachandose;
 
-                    //System.String imgPath = Path.GetFullPath(@"abajo.bmp");
-                    //Indicacion.Source = new BitmapImage(new Uri(imgPath));
                     solucionP.Content = "Posición correcta. Ahora agachate";
 
                     //Guardo la altura de la cabeza y de la cadera
@@ -611,7 +612,11 @@ using System.IO.Packaging;
                     cabeza_inicial.x = bones.Joints[JointType.Head].Position.X;
                     cabeza_inicial.y = bones.Joints[JointType.Head].Position.Y;
                     cabeza_inicial.z = bones.Joints[JointType.Head].Position.Z;
+
                     aTimer.Stop();
+
+                    seguir = false;
+                    rojo = true;
                 }
             }
         }
@@ -626,18 +631,20 @@ using System.IO.Packaging;
         {
             if(bones.Joints[JointType.HipCenter].Position.Y < cadera_inicial.y - 0.3){
                 
-                //System.String imgPath = Path.GetFullPath(@"saltar.bmp");
-               // Indicacion.Source = new BitmapImage(new Uri(imgPath));
-                seguir = false;
-                System.Timers.Timer aTimer = new System.Timers.Timer(1000);
+                System.Timers.Timer aTimer = new System.Timers.Timer(2000);
                 aTimer.Start();
                 aTimer.Elapsed += HandleTimerElapsed;
+                rojo = false;
                 if (seguir)
                 {
                     solucionP.Content = "Estas agachado. Ahora salta";
                     actual = Estado.Agachado;
                     aTimer.Stop();
+                    seguir = false;
+                    
                 }
+                else
+                    rojo = true;
             }
         }
 
@@ -646,7 +653,7 @@ using System.IO.Packaging;
 
             if (bones.Joints[JointType.Head].Position.Y > cabeza_agachado.y + 0.05)
             {
-
+                rojo = false;
                 actual = Estado.Saltando;
             }
         }
@@ -656,8 +663,6 @@ using System.IO.Packaging;
         {
             
             if(bones.Joints[JointType.HipCenter].Position.Y > cadera_inicial.y + 0.2){
-               // System.String imgPath = Path.GetFullPath(@"tick.bmp");
-               // Indicacion.Source = new BitmapImage(new Uri(imgPath));
                 solucionP.Content = "Bien hecho";
                 
                 actual = Estado.Fin;
