@@ -55,7 +55,7 @@
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0" Margin="0 0 0 20">
             <Image DockPanel.Dock="Left" Source="Images\Logo.png" Stretch="Fill" Height="32" Width="81" Margin="0 10 0 5"/>
-            <TextBlock DockPanel.Dock="Right" Margin="0 0 -1 0" VerticalAlignment="Bottom" Foreground="{StaticResource MediumGreyBrush}" FontFamily="Segoe UI" FontSize="18">Práctica 1</TextBlock>
+            <TextBlock DockPanel.Dock="Right" Margin="0 0 -1 0" VerticalAlignment="Bottom" Foreground="{StaticResource MediumGreyBrush}" FontFamily="Segoe UI" FontSize="18">Práctica 2</TextBlock>
             <Image Grid.Column="1" Source="Images\Status.png" Stretch="None" HorizontalAlignment="Center" Margin="0 0 0 5"/>
         </DockPanel>
 
@@ -64,12 +64,6 @@
         </Viewbox>
         <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Stretch">
             <Image Name="Skeleto" Width="1024" Height="720"/>
-        </Viewbox>
-        <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Top">
-            <Image Name="Avanzar" Width="40" Height="40" Source="Images\arriba.png"/>
-        </Viewbox>
-        <Viewbox Grid.Row="1" Grid.Column="0" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Bottom">
-            <Image Name="Retroceder" Width="100" Height="100" Source="Images\abajo.bmp"/>
         </Viewbox>
         <Viewbox Grid.Row="1" Grid.Column="0" Stretch="None"  HorizontalAlignment="Right"  VerticalAlignment="Top">
             <Image x:Name="Indicacion" Stretch="None" />
@@ -83,6 +77,8 @@
                 <TextBlock Name="statusBarText" Margin="-1 0 0 0">Click 'Seated' to change skeletal pipeline type!</TextBlock>
             </StatusBarItem>
         </StatusBar>
-        <Label x:Name="solucionP" Content="Centrando posición" HorizontalAlignment="Right" FontSize="20" Margin="0,0,0,6" Width="479" Grid.Row="2" Grid.RowSpan="2" Height="64"></Label>
+        <Label x:Name="solucionP" Content="Nota tocada" HorizontalAlignment="Right" FontSize="20" Margin="0,0,0,6" Width="479" Grid.Row="2" Grid.RowSpan="2" Height="64"></Label>
+        <Label x:Name="solucionP2" Content="Midiendo" HorizontalAlignment="Right" FontSize="20" Margin="0,563,484,10" Width="118" Grid.Row="1" Grid.RowSpan="3" Height="64"></Label>
+        <Label x:Name="solucionP3" Content="Mano derecha" HorizontalAlignment="Right" FontSize="20" Margin="0,563,535,10" Width="207" Grid.Row="1" Grid.RowSpan="3" Height="64"></Label>
     </Grid>
 </Window>

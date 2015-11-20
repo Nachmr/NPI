@@ -30,6 +30,12 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         Indefinido
     }
 
+    public enum Situacion
+    {
+        Midiendo,
+        Tocando
+    }
+
     public enum Nota{
         Aire,
         Do,
@@ -46,12 +52,14 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     /// </summary>
     public partial class MainWindow : Window
     {
-
-        //Puntos que vamos a guardar para después compararlos y saber si se está agachado o si se ha saltado suficiente
-        Coordenadas cabeza_inicial, cadera_inicial, cabeza_agachado;
-
+        Situacion actual;
         //Variable para guardar en que estado se está
-        Estado_mano_derecha mano_derecha = Estado_mano_derecha.Indefinido;        
+        Estado_mano_derecha mano_derecha = Estado_mano_derecha.Indefinido;
+
+        float tam_mastil = 0;
+        float tam_traste = 0;
+
+        System.Media.SoundPlayer player;
 
         /// <summary>
         /// Width of output drawing
@@ -183,7 +191,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         /// <param name="e">event arguments</param>
         private void WindowLoaded(object sender, RoutedEventArgs e)
         {
-            
+            player = new System.Media.SoundPlayer();
+            actual = Situacion.Midiendo;
 
             // Create the drawing group we'll use for drawing
             this.drawingGroup = new DrawingGroup();
@@ -277,97 +286,8 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
                 }
             }
 
-            using (DrawingContext dc = this.drawingGroup.Open())
-            {
-                // Draw a transparent background to set the render size
-                dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
-                //dc.DrawRectangle(Brushes.Red, null, new Rect(RenderWidth, RenderHeight, 1, 1));
-                if (skeletons.Length != 0)
-                {
-                    foreach (Skeleton skel in skeletons)
-                    {
-                        RenderClippedEdges(skel, dc);
-
-                        if (skel.TrackingState == SkeletonTrackingState.Tracked)
-                        {
-                            this.DrawBonesAndJoints(skel, dc);
-                        }
-                        else if (skel.TrackingState == SkeletonTrackingState.PositionOnly)
-                        {
-                            dc.DrawEllipse(
-                            this.centerPointBrush,
-                            null,
-                            this.SkeletonPointToScreen(skel.Position),
-                            BodyCenterThickness,
-                            BodyCenterThickness);
-                        }
-                    }
-                }
-
-                // prevent drawing outside of our render area
-                this.drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, RenderWidth, RenderHeight));
-            }
-
             //Llamamos a la función que controla los estados por los que hay que pasar
             detectar_estado(skeletons);
-        }
-
-        /// <summary>
-        /// Draws a skeleton's bones and joints
-        /// </summary>
-        /// <param name="skeleton">skeleton to draw</param>
-        /// <param name="drawingContext">drawing context to draw to</param>
-        private void DrawBonesAndJoints(Skeleton skeleton, DrawingContext drawingContext)
-        {
-            // Render Torso
-            this.DrawBone(skeleton, drawingContext, JointType.Head, JointType.ShoulderCenter);
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.ShoulderLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.ShoulderRight);
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderCenter, JointType.Spine);
-            this.DrawBone(skeleton, drawingContext, JointType.Spine, JointType.HipCenter);
-            this.DrawBone(skeleton, drawingContext, JointType.HipCenter, JointType.HipLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.HipCenter, JointType.HipRight);
-
-            // Left Arm
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderLeft, JointType.ElbowLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.ElbowLeft, JointType.WristLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.WristLeft, JointType.HandLeft);
-
-            // Right Arm
-            this.DrawBone(skeleton, drawingContext, JointType.ShoulderRight, JointType.ElbowRight);
-            this.DrawBone(skeleton, drawingContext, JointType.ElbowRight, JointType.WristRight);
-            this.DrawBone(skeleton, drawingContext, JointType.WristRight, JointType.HandRight);
-
-            // Left Leg
-            this.DrawBone(skeleton, drawingContext, JointType.HipLeft, JointType.KneeLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.KneeLeft, JointType.AnkleLeft);
-            this.DrawBone(skeleton, drawingContext, JointType.AnkleLeft, JointType.FootLeft);
-
-            // Right Leg
-            this.DrawBone(skeleton, drawingContext, JointType.HipRight, JointType.KneeRight);
-            this.DrawBone(skeleton, drawingContext, JointType.KneeRight, JointType.AnkleRight);
-            this.DrawBone(skeleton, drawingContext, JointType.AnkleRight, JointType.FootRight);
- 
-            // Render Joints
-            foreach (Joint joint in skeleton.Joints)
-            {
-                Brush drawBrush = null;
-
-                if (joint.TrackingState == JointTrackingState.Tracked)
-                {
-                    drawBrush = this.trackedJointBrush;                    
-                }
-                else if (joint.TrackingState == JointTrackingState.Inferred)
-                {
-                    drawBrush = this.inferredJointBrush;                    
-                }
-
-                if (drawBrush != null)
-                {
-                    //drawingContext.DrawEllipse(drawBrush, null, this.SkeletonPointToScreen(joint.Position), JointThickness, JointThickness);
-                    drawingContext.DrawEllipse(Brushes.Red, null, this.SkeletonPointToScreen(skeleton.Joints[JointType.HipCenter].Position), 9, 9);
-                }
-            }
         }
 
         /// <summary>
@@ -381,43 +301,6 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
             // We are not using depth directly, but we do want the points in our 640x480 output resolution.
             DepthImagePoint depthPoint = this.sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
             return new Point(depthPoint.X, depthPoint.Y);
-        }
-
-        /// <summary>
-        /// Draws a bone line between two joints
-        /// </summary>
-        /// <param name="skeleton">skeleton to draw bones from</param>
-        /// <param name="drawingContext">drawing context to draw to</param>
-        /// <param name="jointType0">joint to start drawing from</param>
-        /// <param name="jointType1">joint to end drawing at</param>
-        private void DrawBone(Skeleton skeleton, DrawingContext drawingContext, JointType jointType0, JointType jointType1)
-        {
-            Joint joint0 = skeleton.Joints[jointType0];
-            Joint joint1 = skeleton.Joints[jointType1];
-
-            // If we can't find either of these joints, exit
-            if (joint0.TrackingState == JointTrackingState.NotTracked ||
-                joint1.TrackingState == JointTrackingState.NotTracked)
-            {
-                return;
-            }
-
-            // Don't draw if both points are inferred
-            if (joint0.TrackingState == JointTrackingState.Inferred &&
-                joint1.TrackingState == JointTrackingState.Inferred)
-            {
-                return;
-            }
-
-            // We assume all drawn bones are inferred unless BOTH joints are tracked
-            Pen drawPen = this.inferredBonePen;
-            if (joint0.TrackingState == JointTrackingState.Tracked && joint1.TrackingState == JointTrackingState.Tracked)
-            {
-                drawPen = this.trackedBonePen;
-            }
-
-            //drawingContext.DrawLine(drawPen, this.SkeletonPointToScreen(joint0.Position), this.SkeletonPointToScreen(joint1.Position));
-            
         }
 
         /// <summary>
@@ -441,31 +324,59 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
         }
 
         //Función para controlar las acciones a realizar según el estado en que nos encontramos.
-        public void detectar_estado(Skeleton [] skeletons)
+        public void detectar_estado(Skeleton[] skeletons)
         {
-            foreach (Skeleton bones in skeletons)
+            if (actual == Situacion.Midiendo)
             {
-                if(mano_derecha == Estado_mano_derecha.Indefinido)
-                    if (bones.Joints[JointType.HandRight].Position.X < bones.Joints[JointType.HipCenter].Position.X + 0.02
-                        && bones.Joints[JointType.HandRight].Position.X > bones.Joints[JointType.HipCenter].Position.X - 0.02
-                        && bones.Joints[JointType.HandRight].Position.Y > bones.Joints[JointType.HipCenter].Position.Y)
+                solucionP2.Content = "Midiendo";
+                foreach (Skeleton bones in skeletons)
+                {
+                   
+                    if(bones.Joints[JointType.WristLeft].Position.Y < bones.Joints[JointType.ElbowLeft].Position.Y + 0.01
+                        && bones.Joints[JointType.WristLeft].Position.Y > bones.Joints[JointType.ElbowLeft].Position.Y - 0.01
+                        && bones.Joints[JointType.ElbowLeft].Position.Y < bones.Joints[JointType.ShoulderLeft].Position.Y + 0.01
+                        && bones.Joints[JointType.ElbowLeft].Position.Y > bones.Joints[JointType.ShoulderLeft].Position.Y - 0.01
+                        && bones.Joints[JointType.ElbowLeft].Position.Y != 0)
                     {
-                        mano_derecha = Estado_mano_derecha.Inicial;
+                        tam_mastil = bones.Joints[JointType.WristLeft].Position.X - bones.Joints[JointType.ShoulderLeft].Position.X;
+                        tam_traste = tam_mastil / 8;
+                        actual = Situacion.Tocando;
                     }
+                }
+            }
+            if (actual == Situacion.Tocando)
+            {
+                solucionP2.Content = "Tocando!!";
 
-                if(mano_derecha == Estado_mano_derecha.Inicial)
-                    if(bones.Joints[JointType.HandRight].Position.X > bones.Joints[JointType.HipCenter].Position.X + 0.02
-                        && bones.Joints[JointType.HandRight].Position.X < bones.Joints[JointType.HipCenter].Position.X - 0.02)
+                foreach (Skeleton bones in skeletons)
+                {                   
+                    if (mano_derecha == Estado_mano_derecha.Indefinido)
                     {
-                        mano_derecha = Estado_mano_derecha.Indefinido;
+                        //solucionP3.Content = "Indefinido";
+                        if (bones.Joints[JointType.WristRight].Position.X < bones.Joints[JointType.ShoulderRight].Position.X
+                            && bones.Joints[JointType.WristRight].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X
+                            && bones.Joints[JointType.WristRight].Position.Y > bones.Joints[JointType.HipCenter].Position.Y)
+                        {   //Mano derecha más alta que la cintura y entre los dos hombros
+                            mano_derecha = Estado_mano_derecha.Inicial;
+                            solucionP3.Content = "Inicial";
+                        }
                     }
-
-                if(mano_derecha == Estado_mano_derecha.Inicial)
-                    if (bones.Joints[JointType.HandRight].Position.Y < bones.Joints[JointType.HipCenter].Position.Y)
+                    if (mano_derecha == Estado_mano_derecha.Inicial)
                     {
-                        Sonar(bones);
+                        //solucionP3.Content = "Inicial";
+                        if (bones.Joints[JointType.WristRight].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X
+                            || bones.Joints[JointType.WristRight].Position.X > bones.Joints[JointType.ShoulderRight].Position.X)
+                        {   //Mano derecha sale de la zona de estado inicial por cualquier lado menos por abajo (Por arriba no se puede salir)
+                            mano_derecha = Estado_mano_derecha.Indefinido;
+                            solucionP3.Content = "Indefinido";
+                        }
+                        else if (bones.Joints[JointType.WristRight].Position.Y < bones.Joints[JointType.HipCenter].Position.Y)
+                        {   //Mano derecha sale de la zona de estado inicial por abajo
+                            Sonar(bones);
+                            solucionP3.Content = "Sonar";
+                        }
                     }
-                        
+                }
             }
         }
 
@@ -495,27 +406,127 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
 
         private void Sonar(Skeleton bones)
         {
-            //Comprobar mano izquierda
-            //sonar según posicion de mano izquierda
+            Nota nota = pos_mano_izquierda(bones);
+            toca_nota(nota);
             mano_derecha = Estado_mano_derecha.Indefinido;
+            
         }
 
         private Nota pos_mano_izquierda(Skeleton bones){
             Nota nota = Nota.Aire;
 
-            if (bones.Joints[JointType.HandLeft].Position.Y > bones.Joints[JointType.HipCenter].Position.Y + 0.02
-                && bones.Joints[JointType.HandLeft].Position.Y < bones.Joints[JointType.HipCenter].Position.Y - 0.02
-                && )
+            if (bones.Joints[JointType.WristLeft].Position.Y < bones.Joints[JointType.HipCenter].Position.Y
+                || bones.Joints[JointType.WristLeft].Position.Y > bones.Joints[JointType.Head].Position.Y
+                || bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X)
             {
                 nota = Nota.Aire;
-                solucionP.Content = "Nota al aire";
             }
             else
             {
-                if(bones.Joints[JointType.HandLeft].Position.X )
+                if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X-tam_traste
+                    && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
+                    )
+                {
+                    nota = Nota.Si;
+                }
+
+                if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
+                    && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
+                    )
+                {
+                    nota = Nota.La;
+                }
+
+                if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
+                    && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
+                    )
+                {
+                    nota = Nota.Sol;
+                }
+
+                if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
+                    && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
+                    )
+                {
+                    nota = Nota.Fa;
+                }
+
+                if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
+                    && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
+                    )
+                {
+                    nota = Nota.Mi;
+                }
+
+                if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
+                    && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
+                    )
+                {
+                    nota = Nota.Re;
+                }
+
+                if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
+                    && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 7
+                    )
+                {
+                    nota = Nota.Do;
+                }
+
             }
 
             return nota;
+        }
+
+        private void toca_nota(Nota nota)
+        {
+            switch (nota)
+            {
+                case Nota.Aire:
+                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Aire.wav");
+                    solucionP.Content = "Nota al aire";
+                break;
+
+                case Nota.Do:
+                player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/C.wav");
+            
+                    solucionP.Content = "Nota Do";
+                break;
+
+                case Nota.Re:
+                solucionP.Content = "Nota Re";
+                player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/D.wav");
+                break;
+
+                case Nota.Mi:
+                player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/E.wav");
+                solucionP.Content = "Nota Mi";
+                break;
+
+                case Nota.Fa:
+                player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/F.wav");
+                solucionP.Content = "Nota Fa";
+                break;
+
+                case Nota.Sol:
+                player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/G.wav");
+                solucionP.Content = "Nota Sol";
+                break;
+
+                case Nota.La:
+                player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/A.wav");
+                solucionP.Content = "Nota La";
+                break;
+
+                case Nota.Si:
+                player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/B.wav");
+                solucionP.Content = "Nota Si";
+                break;
+
+                default:
+                solucionP.Content = "Fallo";
+                break;
+            }
+            player.Play();
         }
     }
 }
