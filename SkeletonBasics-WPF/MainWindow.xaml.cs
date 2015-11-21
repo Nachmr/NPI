@@ -11,8 +11,7 @@ namespace Microsoft.Samples.Kinect.SkeletonBasics
     using System.Threading;
     using System.Windows.Media;
     using Microsoft.Kinect;
-    //using System.String;
-using System.IO.Packaging;
+    using System.IO.Packaging;
     using System.Windows.Media.Imaging;
     using System;
     using System.Timers;
@@ -667,6 +666,28 @@ using System.IO.Packaging;
                 
                 actual = Estado.Fin;
             }
+        }
+
+        public static Skeleton escalar(this Skeleton skeletonactual)
+        {
+            Joint newJoint = new Joint();
+
+            foreach (JointType item in Enum.GetValues(typeof(JointType)))
+            {
+                newJoint = skeletonactual.Joints[item];
+
+                SkeletonPoint pos = new SkeletonPoint()
+                {
+                    X = (float)(newJoint.Position.X * 0.5),
+                    Y = (float)(newJoint.Position.Y * 0.5),
+                    Z = (float)(newJoint.Position.Z * 0.5)
+                };
+
+                newJoint.Position = pos;
+                skeletonactual.Joints[item] = newJoint;
+            }
+
+            return skeletonactual;
         }
     }
 }
