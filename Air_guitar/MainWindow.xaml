@@ -20,15 +20,17 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0" Margin="0 0 0 20">
-            <Image DockPanel.Dock="Left" Source="Images\Logo.png" Stretch="Fill" Width="153" HorizontalAlignment="Left" Margin="0,10,0,-16"/>
+            <Image Name ="Guitarra" DockPanel.Dock="Left" Source="Images\Acustic.jpg" Stretch="Fill" Width="153" HorizontalAlignment="Left" Margin="0,10,0,-16"/>
             <TextBlock DockPanel.Dock="Right" Margin="0 0 -1 0" HorizontalAlignment="Right" VerticalAlignment="Bottom" Foreground="{StaticResource MediumGreyBrush}" FontFamily="Segoe UI" FontSize="18" Width="123">Air guitar</TextBlock>
             <Image Source="Images\Status.png" Stretch="None" HorizontalAlignment="Center" Margin="0 0 0 5"/>
         </DockPanel>
-        <Grid Grid.Row="1">
-            <Image Name ="Backdrop" Source="Images\Background.png"/>
-            <Image Name ="MaskedColor"/>
+        <Grid Grid.Row="1" Height="556" VerticalAlignment="Top">
+            <Image Name ="Backdrop" Source="Images\Background.png" Margin="0,114,0,65"/>
+            <Image Name ="MaskedColor" Margin="0,86,0,65"/>
+            <Image Name ="Seleccion" Source="Images\Acusticselection.bmp" Margin="368,370,301,133" Opacity="0.7" RenderTransformOrigin="-5.808,0.57"/>
         </Grid>
-        <Label x:Name="solucionP" Content="Nota tocada" HorizontalAlignment="Right" FontSize="20" Margin="0,0,0,31" Width="169" Grid.Row="2" Grid.RowSpan="2" RenderTransformOrigin="2.724,0.435"/>
+        <Label x:Name="solucionP" Content="Nota tocada" HorizontalAlignment="Right" FontSize="20" Margin="0,550,0,41" Width="169" Grid.Row="1" Grid.RowSpan="3" RenderTransformOrigin="2.724,0.435"/>
+        <Label x:Name="solucion" Content="Mayor" HorizontalAlignment="Right" FontSize="20" Margin="0,0,0,10" Width="169" Grid.Row="3" RenderTransformOrigin="2.724,0.435"/>
         <Label x:Name="solucionP2" Content="Midiendo" HorizontalAlignment="Right" FontSize="20" Margin="0,0,169,26" Width="118" Grid.Row="2" Grid.RowSpan="2"/>
         <Label x:Name="solucionP3" Content="Mano derecha" HorizontalAlignment="Right" FontSize="20" Margin="0,0,292,31" Width="207" Grid.Row="2" Grid.RowSpan="2"/>
         <StatusBar Grid.Row="3" HorizontalAlignment="Stretch" Name="statusBar" VerticalAlignment="Bottom" Background="White" Foreground="{StaticResource MediumGreyBrush}">

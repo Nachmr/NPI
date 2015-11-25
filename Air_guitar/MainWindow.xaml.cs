@@ -14,6 +14,9 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
     using Microsoft.Kinect;
+    using System.Resources;
+    using System.Drawing;
+    using System.Timers;
 
     public enum Estado_mano_derecha
     {
@@ -67,6 +70,7 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
     /// </summary>
     public partial class MainWindow : Window
     {
+        System.Timers.Timer aTimer = new System.Timers.Timer(2000);
         Situacion actual;
         //Variable para guardar en que estado se está
         Estado_mano_derecha mano_derecha = Estado_mano_derecha.Indefinido;
@@ -75,6 +79,15 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
         float tam_traste = 0;
 
         System.Media.SoundPlayer player;
+
+        //Booleano para controlar si tocamos con guitarra eléctrica o acústica
+        bool electrica;
+
+        //Boleano para controlar si se toca un acorde mayor o menor
+        bool mayors;
+
+        //Booleano para controlar si se toca para arriba o para abajo
+        bool down;
 
         /// <summary>
         /// Format we will use for the depth stream
@@ -156,6 +169,11 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
         /// <param name="e">event arguments</param>
         private void WindowLoaded(object sender, RoutedEventArgs e)
         {
+            electrica = false;
+            Guitarra.Source = new BitmapImage(new Uri(Path.GetFullPath("..\\..\\Images/Acustic.jpg")));
+
+            mayors = true;
+            down = true;
             player = new System.Media.SoundPlayer();
             // Look through all sensors and start the first connected one.
             // This requires that a Kinect is connected at the time of app startup.
@@ -403,8 +421,16 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
             {
                 solucionP2.Content = "Tocando!!";
 
+                
+
                 foreach (Skeleton bones in skeletons)
                 {
+                    System.Windows.Thickness rectangulo = new Thickness();
+                    rectangulo.Right = bones.Joints[JointType.Head].Position.X + 0.01;
+                    rectangulo.Left = bones.Joints[JointType.Head].Position.X + 0.02;
+                    rectangulo.Bottom = bones.Joints[JointType.Head].Position.Y + 0.01;
+                    rectangulo.Top = bones.Joints[JointType.Head].Position.Y + 0.02;
+                    Seleccion.Margin = rectangulo;
                     if (mano_derecha == Estado_mano_derecha.Indefinido)
                     {
                         //solucionP3.Content = "Indefinido";
@@ -438,7 +464,8 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                             {
                                 if (bones.Joints[JointType.WristRight].Position.Y < bones.Joints[JointType.HipCenter].Position.Y)
                                 {   //Mano derecha sale de la zona de estado inicial por abajo
-                                    Sonar(bones, true);
+                                    down = true;
+                                    Sonar(bones);
                                     mano_derecha = Estado_mano_derecha.Fin;
                                     solucionP3.Content = "Fin";
                                 }
@@ -448,29 +475,63 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                             {
                                 if (bones.Joints[JointType.WristRight].Position.Y > bones.Joints[JointType.HipCenter].Position.Y)
                                 {   //Mano derecha sale de la zona de estado inicial por abajo
-                                    Sonar(bones, false);
+                                    down = false;
+                                    Sonar(bones);
                                     mano_derecha = Estado_mano_derecha.Inicial;
                                     solucionP3.Content = "Inicial";
                                 }
                             }
                         }
                     }
+
+                    if (bones.Joints[JointType.HandRight].Position.Y > bones.Joints[JointType.Head].Position.Y
+                            && bones.Joints[JointType.HandRight].Position.X > bones.Joints[JointType.Head].Position.X + 0.1
+                            && bones.Joints[JointType.HandRight].Position.X < bones.Joints[JointType.Head].Position.X + 0.2)
+                    {
+                        aTimer.Start();
+                        aTimer.Elapsed += HandleTimerElapsed;
+                        
+                    }
+                    else if (bones.Joints[JointType.HandRight].Position.Y > bones.Joints[JointType.ShoulderCenter].Position.Y
+                            && bones.Joints[JointType.HandRight].Position.X > bones.Joints[JointType.Head].Position.X + 0.2
+                            && bones.Joints[JointType.HandRight].Position.X < bones.Joints[JointType.Head].Position.X + 0.3)
+                    {
+                        aTimer.Start();
+                        aTimer.Elapsed += HandleTimerElapsed;
+                    }
+
+                    if (electrica)
+                    {
+                        String imgPath = Path.GetFullPath("..\\..\\Images/Electric.png");
+                        Guitarra.Source = new BitmapImage(new Uri(imgPath));
+                    }
+                    else
+                    {
+                        String imgPath = Path.GetFullPath("..\\..\\Images/Acustic.jpg");
+                        Guitarra.Source = new BitmapImage(new Uri(imgPath));
+                    }
                 }
             }
         }
 
-        private void Sonar(Skeleton bones, bool direccion)
+        public void HandleTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            Nota nota = pos_mano_izquierda(bones, direccion);
+            electrica = !electrica;
+            
+
+            aTimer.Stop();
+        }
+
+        private void Sonar(Skeleton bones)
+        {
+            Nota nota = pos_mano_izquierda(bones);
             toca_nota(nota);
         }
 
-        private Nota pos_mano_izquierda(Skeleton bones, bool direccion)
+        private Nota pos_mano_izquierda(Skeleton bones)
         {
             Nota nota = Nota.Aire;
 
-            if (direccion) //Si la mano derecha va de arriba a abajo
-            {
                 //Si la mano izquierda fuera de la region
                 if (bones.Joints[JointType.WristLeft].Position.Y < bones.Joints[JointType.HipCenter].Position.Y
                     || bones.Joints[JointType.WristLeft].Position.Y > bones.Joints[JointType.Head].Position.Y
@@ -483,390 +544,152 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                     //Si la mano izquierda está en el rango de los acordes mayores, vemos en qué nota (Acorde mayor, de arriba a abajo)
                     if (bones.Joints[JointType.WristLeft].Position.Y > ((bones.Joints[JointType.ShoulderCenter].Position.Y + bones.Joints[JointType.HipCenter].Position.Y) / 2))
                     {
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X - tam_traste
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
-                            )
-                        {
-                            nota = Nota.Si;
-                        }
+                        mayors = true;
 
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
-                            )
-                        {
-                            nota = Nota.La;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
-                            )
-                        {
-                            nota = Nota.Sol;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
-                            )
-                        {
-                            nota = Nota.Fa;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
-                            )
-                        {
-                            nota = Nota.Mi;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
-                            )
-                        {
-                            nota = Nota.Re;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 7
-                            )
-                        {
-                            nota = Nota.Do;
-                        }
                     }
                     else    //Si la mano izquierda está en el rango de los acordes menores, vemos en qué nota (Acorde menor, de arriba a abajo)
                     {
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X - tam_traste
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste)
-                        {
-                            nota = Nota.Sim;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
-                            )
-                        {
-                            nota = Nota.Lam;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
-                            )
-                        {
-                            nota = Nota.Solm;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
-                            )
-                        {
-                            nota = Nota.Fam;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
-                            )
-                        {
-                            nota = Nota.Mim;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
-                            )
-                        {
-                            nota = Nota.Rem;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 7
-                            )
-                        {
-                            nota = Nota.Dom;
-                        }
+                        mayors = false;
                     }
-                }
-            }
-            else     //Si la mano derecha va de abajo a arriba
-            {
-                //Si la mano izquierda fuera de la region
-                if (bones.Joints[JointType.WristLeft].Position.Y < bones.Joints[JointType.HipCenter].Position.Y
-                    || bones.Joints[JointType.WristLeft].Position.Y > bones.Joints[JointType.Head].Position.Y
-                    || bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X - tam_traste)
-                {
-                    nota = Nota.Aire_up;
-                }
-                else     //Si la mano izquierda dentro de la region
-                {
-                    //Si la mano izquierda está en el rango de los acordes mayores vemos en qué nota (Acorde mayor, de abajo a arriba)
-                    if (bones.Joints[JointType.WristLeft].Position.Y > ((bones.Joints[JointType.ShoulderCenter].Position.Y + bones.Joints[JointType.HipCenter].Position.Y) / 2))
-                    {
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X - tam_traste
+
+                    //Comprobamos qué nota se toca
+                    if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X - tam_traste
                             && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
                             )
-                        {
-                            nota = Nota.Si_up;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
-                            )
-                        {
-                            nota = Nota.La_up;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
-                            )
-                        {
-                            nota = Nota.Sol_up;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
-                            )
-                        {
-                            nota = Nota.Fa_up;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
-                            )
-                        {
-                            nota = Nota.Mi_up;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
-                            )
-                        {
-                            nota = Nota.Re_up;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 7
-                            )
-                        {
-                            nota = Nota.Do_up;
-                        }
-                    }
-                    else     //Si la mano izquierda está en el rango de los acordes menores vemos en qué nota (Acorde menor, de abajo a arriba)
                     {
+                        nota = Nota.Si;
+                    }
 
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X - tam_traste
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
-                            )
-                        {
-                            nota = Nota.Sim_up;
-                        }
+                    if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
+                        && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
+                        )
+                    {
+                        nota = Nota.La;
+                    }
 
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
-                            )
-                        {
-                            nota = Nota.Lam_up;
-                        }
+                    if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
+                        && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
+                        )
+                    {
+                        nota = Nota.Sol;
+                    }
 
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 2
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
-                            )
-                        {
-                            nota = Nota.Solm_up;
-                        }
+                    if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
+                        && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
+                        )
+                    {
+                        nota = Nota.Fa;
+                    }
 
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 3
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
-                            )
-                        {
-                            nota = Nota.Fam_up;
-                        }
+                    if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
+                        && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
+                        )
+                    {
+                        nota = Nota.Mi;
+                    }
 
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 4
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
-                            )
-                        {
-                            nota = Nota.Mim_up;
-                        }
+                    if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
+                        && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
+                        )
+                    {
+                        nota = Nota.Re;
+                    }
 
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 5
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
-                            )
-                        {
-                            nota = Nota.Rem_up;
-                        }
-
-                        if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
-                            && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 7
-                            )
-                        {
-                            nota = Nota.Dom_up;
-                        }
+                    if (bones.Joints[JointType.WristLeft].Position.X < bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 6
+                        && bones.Joints[JointType.WristLeft].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X + tam_traste * 7
+                        )
+                    {
+                        nota = Nota.Do;
                     }
                 }
-            }
 
             return nota;
         }
 
         private void toca_nota(Nota nota)
         {
+            String path = "..\\..\\Sounds/";
+
+            if(!electrica){
+                path += "Acustic/";
+            }
+            else
+            {
+                path += "Electric/";
+            }
+
+            if (mayors)
+            {
+                path += "Mayors/";
+                solucion.Content = "Mayor";
+            }
+            else
+            {
+                path += "Minors/";
+                solucion.Content = "Menor";
+            }
+
+            if(down){
+                path += "Down/";
+            }else{
+                path += "Up/";
+            }
+        
             switch (nota)
             {
                 case Nota.Aire:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Aire.wav");
+                    path += "Aire";
                     solucionP.Content = "Nota al aire";
                     break;
 
                 case Nota.Do:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/C.wav");
+                    path += "C";
 
                     solucionP.Content = "Nota Do";
                     break;
 
                 case Nota.Re:
                     solucionP.Content = "Nota Re";
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/D.wav");
+                    path += "D";
                     break;
 
                 case Nota.Mi:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/E.wav");
+                    path +="E";
                     solucionP.Content = "Nota Mi";
                     break;
 
                 case Nota.Fa:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/F.wav");
+                    path += "F";
                     solucionP.Content = "Nota Fa";
                     break;
 
                 case Nota.Sol:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/G.wav");
+                    path += "G";
                     solucionP.Content = "Nota Sol";
                     break;
 
                 case Nota.La:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/A.wav");
+                    path +="A";
                     solucionP.Content = "Nota La";
                     break;
 
                 case Nota.Si:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/B.wav");
+                    path += "B";
                     solucionP.Content = "Nota Si";
-                    break;
-
-                case Nota.Aire_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Aire_up.wav");
-                    solucionP.Content = "Nota al aire_up";
-                    break;
-
-                case Nota.Do_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/C_up.wav");
-
-                    solucionP.Content = "Nota Do_up";
-                    break;
-
-                case Nota.Re_up:
-                    solucionP.Content = "Nota Re_up";
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/D_up.wav");
-                    break;
-
-                case Nota.Mi_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/E_up.wav");
-                    solucionP.Content = "Nota Mi_up";
-                    break;
-
-                case Nota.Fa_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/F_up.wav");
-                    solucionP.Content = "Nota Fa_up";
-                    break;
-
-                case Nota.Sol_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/G_up.wav");
-                    solucionP.Content = "Nota Sol_up";
-                    break;
-
-                case Nota.La_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/A_up.wav");
-                    solucionP.Content = "Nota La_up";
-                    break;
-
-                case Nota.Si_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/B_up.wav");
-                    solucionP.Content = "Nota Si_up";
-                    break;
-
-                case Nota.Dom:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Cm.wav");
-
-                    solucionP.Content = "Nota Dom";
-                    break;
-
-                case Nota.Rem:
-                    solucionP.Content = "Nota Rem";
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Dm.wav");
-                    break;
-
-                case Nota.Mim:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Em.wav");
-                    solucionP.Content = "Nota Mim";
-                    break;
-
-                case Nota.Fam:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Fm.wav");
-                    solucionP.Content = "Nota Fam";
-                    break;
-
-                case Nota.Solm:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Gm.wav");
-                    solucionP.Content = "Nota Solm";
-                    break;
-
-                case Nota.Lam:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Am.wav");
-                    solucionP.Content = "Nota Lam";
-                    break;
-
-                case Nota.Sim:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Bm.wav");
-                    solucionP.Content = "Nota Sim";
-                    break;
-
-                case Nota.Dom_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Cm_up.wav");
-
-                    solucionP.Content = "Nota Dom_up";
-                    break;
-
-                case Nota.Rem_up:
-                    solucionP.Content = "Nota Rem_up";
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Dm_up.wav");
-                    break;
-
-                case Nota.Mim_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Em_up.wav");
-                    solucionP.Content = "Nota Mim_up";
-                    break;
-
-                case Nota.Fam_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Fm_up.wav");
-                    solucionP.Content = "Nota Fam_up";
-                    break;
-
-                case Nota.Solm_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Gm_up.wav");
-                    solucionP.Content = "Nota Solm_up";
-                    break;
-
-                case Nota.Lam_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Am_up.wav");
-                    solucionP.Content = "Nota Lam_up";
-                    break;
-
-                case Nota.Sim_up:
-                    player.SoundLocation = Path.GetFullPath("..\\..\\Sounds/Bm_up.wav");
-                    solucionP.Content = "Nota Sim_up";
                     break;
 
                 default:
                     solucionP.Content = "Fallo";
                     break;
             }
+
+            if(!mayors)
+            {
+                path += "m";
+            }
+
+            path += ".wav";
+            player.SoundLocation = path;
             player.Play();
         }
     }
