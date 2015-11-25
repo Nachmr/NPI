@@ -15,7 +15,6 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
     using System.Windows.Media.Imaging;
     using Microsoft.Kinect;
     using System.Resources;
-    using System.Drawing;
     using System.Timers;
 
     public enum Estado_mano_derecha
@@ -92,7 +91,7 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
         /// <summary>
         /// Format we will use for the depth stream
         /// </summary>
-        private const DepthImageFormat DepthFormat = DepthImageFormat.Resolution320x240Fps30;
+        private const DepthImageFormat DepthFormat = DepthImageFormat.Resolution640x480Fps30;
 
         /// <summary>
         /// Format we will use for the color stream
@@ -396,12 +395,25 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
             }
         }
 
+        /// <summary>
+        /// Maps a SkeletonPoint to lie within our render space and converts to Point
+        /// </summary>
+        /// <param name="skelpoint">point to map</param>
+        /// <returns>mapped point</returns>
+        private System.Windows.Point SkeletonPointToScreen(SkeletonPoint skelpoint)
+        {
+            // Convert point to depth space.  
+            // We are not using depth directly, but we do want the points in our 640x480 output resolution.
+            DepthImagePoint depthPoint = this.sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
+            return new System.Windows.Point(depthPoint.X, depthPoint.Y);
+        }
+
         //Función para controlar las acciones a realizar según el estado en que nos encontramos.
         public void detectar_estado(Skeleton[] skeletons)
         {
             if (actual == Situacion.Midiendo)
             {
-                solucionP2.Content = "Midiendo";
+                //solucionP2.Content = "Midiendo";
                 foreach (Skeleton bones in skeletons)
                 {
 
@@ -414,22 +426,24 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                         tam_mastil = bones.Joints[JointType.WristLeft].Position.X - bones.Joints[JointType.ShoulderLeft].Position.X;
                         tam_traste = tam_mastil / 8;
                         actual = Situacion.Tocando;
+                        //Seleccion.Visibility = System.Windows.Visibility.Visible;
+                        Estado.Content = "Tocando";
                     }
                 }
             }
             if (actual == Situacion.Tocando)
             {
-                solucionP2.Content = "Tocando!!";
-
-                
+                //solucionP2.Content = "Tocando!!";
 
                 foreach (Skeleton bones in skeletons)
                 {
                     System.Windows.Thickness rectangulo = new Thickness();
-                    rectangulo.Right = bones.Joints[JointType.Head].Position.X + 0.01;
-                    rectangulo.Left = bones.Joints[JointType.Head].Position.X + 0.02;
-                    rectangulo.Bottom = bones.Joints[JointType.Head].Position.Y + 0.01;
-                    rectangulo.Top = bones.Joints[JointType.Head].Position.Y + 0.02;
+                    Point cabeza = SkeletonPointToScreen(bones.Joints[JointType.Head].Position);
+                    Estado.Content = cabeza.X;
+                    rectangulo.Right = cabeza.X - Row1.ActualWidth + 2;//Window.ActualWidth/2 + bones.Joints[JointType.Head].Position.X + 72;
+                    rectangulo.Left = cabeza.X - Row1.ActualWidth; //Window.ActualWidth / 2 + bones.Joints[JointType.Head].Position.X;
+                    rectangulo.Bottom = cabeza.Y - Row1.ActualWidth - 59; //Window.ActualHeight / 2 + bones.Joints[JointType.Head].Position.Y + 59;
+                    rectangulo.Top = cabeza.Y - Row1.ActualWidth;// Window.ActualHeight/2 + bones.Joints[JointType.Head].Position.Y;
                     Seleccion.Margin = rectangulo;
                     if (mano_derecha == Estado_mano_derecha.Indefinido)
                     {
@@ -439,14 +453,14 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                             && bones.Joints[JointType.WristRight].Position.Y > bones.Joints[JointType.HipCenter].Position.Y)
                         {   //Mano derecha más alta que la cintura y entre los dos hombros
                             mano_derecha = Estado_mano_derecha.Inicial;
-                            solucionP3.Content = "Inicial";
+                            //solucionP3.Content = "Inicial";
                         }
                         if (bones.Joints[JointType.WristRight].Position.X < bones.Joints[JointType.ShoulderRight].Position.X
                            && bones.Joints[JointType.WristRight].Position.X > bones.Joints[JointType.ShoulderLeft].Position.X
                            && bones.Joints[JointType.WristRight].Position.Y < bones.Joints[JointType.HipCenter].Position.Y)
                         {   //Mano derecha más alta que la cintura y entre los dos hombros
                             mano_derecha = Estado_mano_derecha.Fin;
-                            solucionP3.Content = "Fin";
+                            //solucionP3.Content = "Fin";
                         }
                     }
                     if (mano_derecha == Estado_mano_derecha.Inicial || mano_derecha == Estado_mano_derecha.Fin)
@@ -456,7 +470,7 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                             || bones.Joints[JointType.WristRight].Position.X > bones.Joints[JointType.ShoulderRight].Position.X)
                         {   //Mano derecha sale de la zona de estado inicial por cualquier lado menos por abajo (Por arriba no se puede salir)
                             mano_derecha = Estado_mano_derecha.Indefinido;
-                            solucionP3.Content = "Indefinido";
+                            //solucionP3.Content = "Indefinido";
                         }
                         else
                         {
@@ -467,7 +481,7 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                                     down = true;
                                     Sonar(bones);
                                     mano_derecha = Estado_mano_derecha.Fin;
-                                    solucionP3.Content = "Fin";
+                                   // solucionP3.Content = "Fin";
                                 }
                             }
 
@@ -478,7 +492,7 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                                     down = false;
                                     Sonar(bones);
                                     mano_derecha = Estado_mano_derecha.Inicial;
-                                    solucionP3.Content = "Inicial";
+                                   // solucionP3.Content = "Inicial";
                                 }
                             }
                         }
@@ -621,12 +635,12 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
             if (mayors)
             {
                 path += "Mayors/";
-                solucion.Content = "Mayor";
+                //solucion.Content = "Mayor";
             }
             else
             {
                 path += "Minors/";
-                solucion.Content = "Menor";
+                //solucion.Content = "Menor";
             }
 
             if(down){
@@ -639,47 +653,47 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
             {
                 case Nota.Aire:
                     path += "Aire";
-                    solucionP.Content = "Nota al aire";
+                    //solucionP.Content = "Nota al aire";
                     break;
 
                 case Nota.Do:
                     path += "C";
 
-                    solucionP.Content = "Nota Do";
+                   // solucionP.Content = "Nota Do";
                     break;
 
                 case Nota.Re:
-                    solucionP.Content = "Nota Re";
+                   // solucionP.Content = "Nota Re";
                     path += "D";
                     break;
 
                 case Nota.Mi:
                     path +="E";
-                    solucionP.Content = "Nota Mi";
+                   // solucionP.Content = "Nota Mi";
                     break;
 
                 case Nota.Fa:
                     path += "F";
-                    solucionP.Content = "Nota Fa";
+                  //  solucionP.Content = "Nota Fa";
                     break;
 
                 case Nota.Sol:
                     path += "G";
-                    solucionP.Content = "Nota Sol";
+                   // solucionP.Content = "Nota Sol";
                     break;
 
                 case Nota.La:
                     path +="A";
-                    solucionP.Content = "Nota La";
+                  //  solucionP.Content = "Nota La";
                     break;
 
                 case Nota.Si:
                     path += "B";
-                    solucionP.Content = "Nota Si";
+                  //  solucionP.Content = "Nota Si";
                     break;
 
                 default:
-                    solucionP.Content = "Fallo";
+                  //  solucionP.Content = "Fallo";
                     break;
             }
 
