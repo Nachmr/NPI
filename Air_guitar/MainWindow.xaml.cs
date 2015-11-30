@@ -69,6 +69,7 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
     /// </summary>
     public partial class MainWindow : Window
     {
+        bool cambiarsonido = false;
         System.Timers.Timer aTimer = new System.Timers.Timer(2000);
         Situacion actual;
         //Variable para guardar en que estado se está
@@ -139,6 +140,66 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
         private int colorToDepthDivisor;
 
         /// <summary>
+        /// Brush used for drawing joints that are currently tracked
+        /// </summary>
+        private readonly Brush trackedJointBrush = new SolidColorBrush(Color.FromArgb(255, 68, 192, 68));
+
+        /// <summary>
+        /// Brush used for drawing joints that are currently inferred
+        /// </summary>        
+        private readonly Brush inferredJointBrush = Brushes.Yellow;
+
+        /// <summary>
+        /// Pen used for drawing bones that are currently tracked
+        /// </summary>
+        private readonly Pen trackedBonePen = new Pen(Brushes.Green, 6);
+
+        /// <summary>
+        /// Pen used for drawing bones that are currently inferred
+        /// </summary>        
+        private readonly Pen inferredBonePen = new Pen(Brushes.Gray, 1);
+
+        /// <summary>
+        /// Drawing image that we will display
+        /// </summary>
+        private DrawingImage imageSource;
+
+        /// <summary>
+        /// Width of output drawing
+        /// </summary>
+        private const float RenderWidth = 640.0f;
+
+        /// <summary>
+        /// Height of our output drawing
+        /// </summary>
+        private const float RenderHeight = 480.0f;
+
+        /// <summary>
+        /// Thickness of drawn joint lines
+        /// </summary>
+        private const double JointThickness = 3;
+
+        /// <summary>
+        /// Thickness of body center ellipse
+        /// </summary>
+        private const double BodyCenterThickness = 10;
+
+        /// <summary>
+        /// Thickness of clip edge rectangles
+        /// </summary>
+        private const double ClipBoundsThickness = 10;
+
+        /// <summary>
+        /// Brush used to draw skeleton center point
+        /// </summary>
+        private readonly Brush centerPointBrush = Brushes.Blue;
+
+        /// <summary>
+        /// Drawing group for skeleton rendering output
+        /// </summary>
+        private DrawingGroup drawingGroup;
+
+        /// <summary>
         /// Width of the depth image
         /// </summary>
         private int depthWidth;
@@ -168,8 +229,19 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
         /// <param name="e">event arguments</param>
         private void WindowLoaded(object sender, RoutedEventArgs e)
         {
-            electrica = false;
-            Guitarra.Source = new BitmapImage(new Uri(Path.GetFullPath("..\\..\\Images/Acustic.jpg")));
+
+            // Create the drawing group we'll use for drawing
+            this.drawingGroup = new DrawingGroup();
+
+            // Create an image source that we can use in our image control
+            this.imageSource = new DrawingImage(this.drawingGroup);
+
+            Midiendo.Visibility = System.Windows.Visibility.Visible;
+
+            // Display the drawing using our image control
+            //Image.Source = this.imageSource;
+
+            electrica = true;
 
             mayors = true;
             down = true;
@@ -294,6 +366,36 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                 }
             }
 
+            using (DrawingContext dc = this.drawingGroup.Open())
+            {
+                // Draw a transparent background to set the render size
+                dc.DrawRectangle(Brushes.Transparent, null, new Rect(0.0, 0.0, RenderWidth, RenderHeight));
+
+                if (skeletons.Length != 0)
+                {
+                    foreach (Skeleton skel in skeletons)
+                    {
+
+                        if (skel.TrackingState == SkeletonTrackingState.Tracked)
+                        {
+                            this.seleccion_sonido(skel);
+                        }
+                        else if (skel.TrackingState == SkeletonTrackingState.PositionOnly)
+                        {
+                            dc.DrawEllipse(
+                            this.centerPointBrush,
+                            null,
+                            this.SkeletonPointToScreen(skel.Position),
+                            BodyCenterThickness,
+                            BodyCenterThickness);
+                        }
+                    }
+                }
+
+                // prevent drawing outside of our render area
+                this.drawingGroup.ClipGeometry = new RectangleGeometry(new Rect(0.0, 0.0, RenderWidth, RenderHeight));
+            }
+
             //Llamamos a la función que controla los estados por los que hay que pasar
             detectar_estado(skeletons);
 
@@ -396,55 +498,105 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
         }
 
         /// <summary>
+        /// Draws a skeleton's bones and joints
+        /// </summary>
+        /// <param name="skeleton">skeleton to draw</param>
+        private void seleccion_sonido(Skeleton skeleton)
+        {
+            // Render Joints
+            foreach (Joint joint in skeleton.Joints)
+            {
+                Brush drawBrush = this.trackedJointBrush;
+                     if (joint.JointType == JointType.HandRight)
+                     {
+                         Point punto = this.SkeletonPointToScreen(joint.Position);
+                         if (punto.X > 496
+                            && punto.X < 540
+                            && punto.Y > 156
+                            && punto.Y < 190)
+                         {
+                             aTimer.Start();
+                             aTimer.Elapsed += HandleTimerElapsed;
+                             if (cambiarsonido)
+                             {
+                                 electrica = true;
+                                 cambiarsonido = false;
+                             }
+
+                         }
+                         else if (punto.X > 500
+                            && punto.X < 535
+                            && punto.Y > 90
+                            && punto.Y < 125)
+                         {
+                             aTimer.Start();
+                             aTimer.Elapsed += HandleTimerElapsed;
+                             if (cambiarsonido)
+                             {
+                                 electrica = false;
+                                 cambiarsonido = false;
+                             }
+                         }
+
+                         if (!electrica)
+                         {
+                             Seleccion1.Opacity = 1;
+                             Seleccion2.Opacity = 0.5;
+                         }
+                         else
+                         {
+                             Seleccion1.Opacity = 0.5;
+                             Seleccion2.Opacity = 1;
+                         }
+                    }
+                
+            }
+        }
+
+        /// <summary>
         /// Maps a SkeletonPoint to lie within our render space and converts to Point
         /// </summary>
         /// <param name="skelpoint">point to map</param>
         /// <returns>mapped point</returns>
-        private System.Windows.Point SkeletonPointToScreen(SkeletonPoint skelpoint)
+        private Point SkeletonPointToScreen(SkeletonPoint skelpoint)
         {
+            
             // Convert point to depth space.  
             // We are not using depth directly, but we do want the points in our 640x480 output resolution.
             DepthImagePoint depthPoint = this.sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
-            return new System.Windows.Point(depthPoint.X, depthPoint.Y);
+            Point punto = new Point(depthPoint.X, depthPoint.Y);
+            return punto;
         }
 
         //Función para controlar las acciones a realizar según el estado en que nos encontramos.
         public void detectar_estado(Skeleton[] skeletons)
         {
+            Backdrop.Height = Window.ActualHeight;
+            Backdrop.Width = Window.ActualWidth;
             if (actual == Situacion.Midiendo)
             {
-                //solucionP2.Content = "Midiendo";
                 foreach (Skeleton bones in skeletons)
                 {
 
-                    if (bones.Joints[JointType.WristLeft].Position.Y < bones.Joints[JointType.ElbowLeft].Position.Y + 0.01
-                        && bones.Joints[JointType.WristLeft].Position.Y > bones.Joints[JointType.ElbowLeft].Position.Y - 0.01
-                        && bones.Joints[JointType.ElbowLeft].Position.Y < bones.Joints[JointType.ShoulderLeft].Position.Y + 0.01
-                        && bones.Joints[JointType.ElbowLeft].Position.Y > bones.Joints[JointType.ShoulderLeft].Position.Y - 0.01
+                    if (bones.Joints[JointType.WristLeft].Position.Y < bones.Joints[JointType.ElbowLeft].Position.Y + 0.02
+                        && bones.Joints[JointType.WristLeft].Position.Y > bones.Joints[JointType.ElbowLeft].Position.Y - 0.02
+                        && bones.Joints[JointType.ElbowLeft].Position.Y < bones.Joints[JointType.ShoulderLeft].Position.Y + 0.02
+                        && bones.Joints[JointType.ElbowLeft].Position.Y > bones.Joints[JointType.ShoulderLeft].Position.Y - 0.02
                         && bones.Joints[JointType.ElbowLeft].Position.Y != 0)
                     {
                         tam_mastil = bones.Joints[JointType.WristLeft].Position.X - bones.Joints[JointType.ShoulderLeft].Position.X;
                         tam_traste = tam_mastil / 8;
                         actual = Situacion.Tocando;
-                        //Seleccion.Visibility = System.Windows.Visibility.Visible;
-                        Estado.Content = "Tocando";
+                        Midiendo.Visibility = System.Windows.Visibility.Hidden;
+                        Seleccion1.Visibility = System.Windows.Visibility.Visible;
+                        Seleccion2.Visibility = System.Windows.Visibility.Visible;
                     }
                 }
             }
             if (actual == Situacion.Tocando)
             {
-                //solucionP2.Content = "Tocando!!";
-
                 foreach (Skeleton bones in skeletons)
                 {
-                    System.Windows.Thickness rectangulo = new Thickness();
-                    Point cabeza = SkeletonPointToScreen(bones.Joints[JointType.Head].Position);
-                    Estado.Content = cabeza.X;
-                    rectangulo.Right = cabeza.X - Row1.ActualWidth + 2;//Window.ActualWidth/2 + bones.Joints[JointType.Head].Position.X + 72;
-                    rectangulo.Left = cabeza.X - Row1.ActualWidth; //Window.ActualWidth / 2 + bones.Joints[JointType.Head].Position.X;
-                    rectangulo.Bottom = cabeza.Y - Row1.ActualWidth - 59; //Window.ActualHeight / 2 + bones.Joints[JointType.Head].Position.Y + 59;
-                    rectangulo.Top = cabeza.Y - Row1.ActualWidth;// Window.ActualHeight/2 + bones.Joints[JointType.Head].Position.Y;
-                    Seleccion.Margin = rectangulo;
                     if (mano_derecha == Estado_mano_derecha.Indefinido)
                     {
                         //solucionP3.Content = "Indefinido";
@@ -498,41 +650,14 @@ namespace Microsoft.Samples.Kinect.CoordinateMappingBasics
                         }
                     }
 
-                    if (bones.Joints[JointType.HandRight].Position.Y > bones.Joints[JointType.Head].Position.Y
-                            && bones.Joints[JointType.HandRight].Position.X > bones.Joints[JointType.Head].Position.X + 0.1
-                            && bones.Joints[JointType.HandRight].Position.X < bones.Joints[JointType.Head].Position.X + 0.2)
-                    {
-                        aTimer.Start();
-                        aTimer.Elapsed += HandleTimerElapsed;
-                        
-                    }
-                    else if (bones.Joints[JointType.HandRight].Position.Y > bones.Joints[JointType.ShoulderCenter].Position.Y
-                            && bones.Joints[JointType.HandRight].Position.X > bones.Joints[JointType.Head].Position.X + 0.2
-                            && bones.Joints[JointType.HandRight].Position.X < bones.Joints[JointType.Head].Position.X + 0.3)
-                    {
-                        aTimer.Start();
-                        aTimer.Elapsed += HandleTimerElapsed;
-                    }
-
-                    if (electrica)
-                    {
-                        String imgPath = Path.GetFullPath("..\\..\\Images/Electric.png");
-                        Guitarra.Source = new BitmapImage(new Uri(imgPath));
-                    }
-                    else
-                    {
-                        String imgPath = Path.GetFullPath("..\\..\\Images/Acustic.jpg");
-                        Guitarra.Source = new BitmapImage(new Uri(imgPath));
-                    }
+                    
                 }
             }
         }
 
         public void HandleTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            electrica = !electrica;
-            
-
+            cambiarsonido = true;
             aTimer.Stop();
         }
 

@@ -1,7 +1,7 @@
 ﻿<Window Name ="Window" x:Class="Microsoft.Samples.Kinect.CoordinateMappingBasics.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Air Guitar" Height="735" Width="770" Loaded="WindowLoaded" Closing="WindowClosing">
+        Title="Air Guitar" Width="770" Height="735" Loaded="WindowLoaded" Closing="WindowClosing">
 
     <Window.Resources>
         <SolidColorBrush x:Key="MediumGreyBrush" Color="#ff6e6e6e"/>
@@ -16,24 +16,18 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition/>
-            <RowDefinition Height="0"/>
-            <RowDefinition Height="48"/>
             <RowDefinition Height="Auto" MinHeight="26"/>
         </Grid.RowDefinitions>
-        <DockPanel Grid.Row="0" Margin="0 0 0 20">
-            <Image Name ="Guitarra" DockPanel.Dock="Left" Source="Images\Acustic.jpg" Stretch="Fill" Width="153" HorizontalAlignment="Left" Margin="0,10,0,-16"/>
-            <TextBlock DockPanel.Dock="Right" Margin="0 0 -1 0" HorizontalAlignment="Right" VerticalAlignment="Bottom" Foreground="{StaticResource MediumGreyBrush}" FontFamily="Segoe UI" FontSize="18" Width="123">Air guitar</TextBlock>
-            <Image Source="Images\Status.png" Stretch="None" HorizontalAlignment="Center" Margin="0 0 0 5"/>
-        </DockPanel>
-        <Grid Name="Row1" Grid.Row="1" >
-            
-            <Image Name ="Backdrop" Source="Images\Background.png" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <Image Name ="MaskedColor" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10,-10,-10,10"/>
-            <Image Name ="Seleccion" Source="Images\Acusticselection.bmp" Margin="451,134,219,362" Opacity="0.7" RenderTransformOrigin="-5.808,0.57" Visibility="Hidden"/>
+        <Grid Name="Row1" Grid.Row="1" Grid.RowSpan="3" >
+            <Image Name ="Backdrop" Source="Images\Background.png" Margin="0,0,0,0"/>
+            <Image Name ="MaskedColor" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,-10,-10,0"/>
+            <Image Name ="Seleccion1" Source="Images\Acusticselection.bmp" Margin="643,140,27,506" Opacity="0.5" RenderTransformOrigin="-5.808,0.57" Visibility="Hidden"/>
+            <Image Name ="Seleccion2" Source="Images\Electricselection.png" Margin="643,237,27,407" Opacity="1" RenderTransformOrigin="-5.808,0.57" Visibility="Hidden"/>
+            <Image Name ="Midiendo" Source="Images\posmedir.png" Margin="10,123,673,453" Opacity="1" RenderTransformOrigin="-5.808,0.57" Visibility="Visible"/>
+  
         </Grid>
-        <Label Name="Estado" Content="Midiendo" Margin="10,0,-10,-1" Grid.Row="3" Grid.RowSpan="2"/>
         <StatusBar Grid.Row="4" HorizontalAlignment="Stretch" Name="statusBar" VerticalAlignment="Bottom" Background="White" Foreground="{StaticResource MediumGreyBrush}" Height="26">
-            
+
             <StatusBarItem Padding="0 0 0 10">
 
                 <TextBlock Name="statusBarText" Margin="-1 0 0 0">Kinect Status</TextBlock>

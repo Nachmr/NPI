@@ -36,7 +36,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Images\Kinect.ico</ApplicationIcon>
+    <ApplicationIcon>
+    </ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Kinect">
@@ -100,17 +101,14 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Images\Kinect.ico" />
-    <Resource Include="Images\Status.png" />
     <Resource Include="Images\Background.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Images\Acustic.jpg" />
     <Resource Include="Images\Acusticselection.bmp" />
     <Resource Include="Images\Electricselection.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Images\Electric.png" />
+    <Resource Include="Images\posmedir.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
